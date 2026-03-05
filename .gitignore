@@ -1,0 +1,6 @@
+server
+subscriber
+*.o
+.vscode/
+*.out
+*.err
