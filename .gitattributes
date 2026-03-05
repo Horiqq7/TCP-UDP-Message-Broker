@@ -1,0 +1,2 @@
+*.py linguist-vendored
+pcom_hw2_udp_client/* linguist-vendored
