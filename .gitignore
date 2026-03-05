@@ -4,3 +4,4 @@ subscriber
 .vscode/
 *.out
 *.err
+__pycache__/
