@@ -1,36 +1,184 @@
-Rusu Horia - 321 CD
-README - Platforma mesajerie client-server TCP si UDP
+# 📡 TCP/UDP Message Broker
 
-1. Descriere generala
-   Acest proiect implementeaza o platforma de mesagerie in model client-server folosind socket-uri TCP pentru clientii subscriber si UDP pentru clientii publisher. Serverul actioneaza ca broker, primind mesaje UDP, filtrandu-le dupa topic si retransmitandu-le catre toti clientii TCP abonati.
+A high-performance **Publish/Subscribe message broker** implemented in **C**. This system enables efficient communication between **UDP publishers** and **TCP subscribers**, routing messages based on topic subscriptions with low latency and high reliability.
 
-2. Structura proiect
-   server.c : implementarea broker-ului, gestioneaza conexiuni TCP, receptie UDP, multiplexare I/O si administrare abonari
-   subscriber.c: client TCP (subscriber) care se conecteaza la server, trimite comenzi subscribe/unsubscribe si afiseaza mesajele primite
-   Makefile : contine target-urile server, subscriber si clean
+---
 
-3. Protocol aplicativ TCP (incadrare mesaje)
-   Pentru delimitarea corecta a mesajelor peste TCP, am definit un header fix de 4 octeti in network byte order care indica lungimea payload-ului urmator. Structura transmisiilor este:
-   4 octeti (uint32\_t net\_len) urmat de net\_len octeti de payload
-   unde net\_len este lungimea in octeti a payload-ului, iar payload contine comanda (de ex. subscribe topic) sau mesajul servit de broker.
-   Acest framing asigura separarea corecta chiar daca TCP concateneaza sau fragmenteaza datele.
+## 🚀 Overview
 
-4. Multiplexare I/O si optimizari TCP
-   Serverul foloseste select() pentru a asculta simultan socket-ul de ascultare TCP, socket-ul UDP, stdin si toti clientii TCP activi. Toate conexiunile TCP dezactiveaza algoritmul Nagle prin optiunea TCP\_NODELAY pentru latenta redusa. Buffer-ul de iesire standard (stdout) este dezactivat (setvbuf cu \_IONBF) atat in server, cat si in subscriber pentru feedback imediat.
+This project implements a messaging platform with a central broker that connects two different communication models:
 
-5. Gestionare abonari si wildcard-uri
-   Fiecare client TCP detine o lista dinamica de pattern-uri pentru topicuri, de forma UPB/precis/*/value sau +/status. Functia match\_topic() implementeaza suport pentru '*' (orice niveluri) si '+' (un nivel) folosind recursivitate si separarea topicului in segmente. La deconectare, abonamentele se salveaza si se restaureaza la reconectare, pe baza ID-ului clientului.
+* **UDP Clients (Publishers)** → Send messages tagged with topics.
+* **TCP Clients (Subscribers)** → Subscribe to topics and receive matching messages in real-time.
 
-6. Compilare si rulare
-   Pentru compilare rulati:
-   make server
-   make subscriber
-   Pentru curatare:
-   make clean
-   Pornire server:
-   ./server <PORT>
-   Pornire subscriber:
-   ./subscriber \<ID\_CLIENT> \<IP\_SERVER> \<PORT\_SERVER>
+The broker ensures that messages are delivered only to the relevant subscribers.
 
-7. Observatii finale
-   Toate apelurile de sistem sunt verificate pentru erori, aplicandu-se programare defensiva. Protocolul aplicativ TCP definit este eficient si robust, conform cerintelor temei.
+---
+
+## 🏗️ Architecture
+
+### 🔹 Broker (Server)
+
+* Acts as the **central hub** of the system.
+* Receives messages from UDP publishers.
+* Matches messages against subscriber topics.
+* Forwards messages to the appropriate TCP clients.
+
+### 🔹 Subscribers (TCP Clients)
+
+* Connect to the broker via TCP.
+* Subscribe or unsubscribe from topics.
+* Receive and display messages in real-time.
+
+---
+
+## 🧠 Key Features
+
+### ⚡ I/O Multiplexing
+
+* Uses `select()` to handle:
+
+  * TCP listening socket
+  * UDP socket
+  * Standard input (`stdin`)
+  * Active TCP client connections
+* Ensures **non-blocking concurrent communication**.
+
+---
+
+### 📦 Custom TCP Framing
+
+* Solves TCP stream issues (fragmentation & concatenation).
+* Uses a **4-byte header (network byte order)**:
+
+  * Specifies payload length (`net_len`)
+* Guarantees **correct message reconstruction**.
+
+---
+
+### 🧩 Topic Wildcard Matching
+
+Supports flexible subscription patterns:
+
+* `+` → Matches a **single level**
+* `*` → Matches **multiple levels**
+
+✔ Implemented using a **recursive segment-matching algorithm**
+✔ Enables powerful and dynamic topic filtering
+
+---
+
+### 🔄 Persistent Sessions
+
+* Clients are identified by a **unique Client ID**.
+* Subscription state is preserved even after disconnect.
+* On reconnect:
+
+  * Previous subscriptions are automatically restored.
+
+---
+
+### ⚡ Low-Latency Optimizations
+
+* Disables **Nagle’s Algorithm** (`TCP_NODELAY`)
+* Disables stdout buffering (`_IONBF`)
+* Ensures **instant message delivery and display**
+
+---
+
+## 📁 Project Structure
+
+```
+.
+├── server.c        # Core broker implementation
+├── subscriber.c    # TCP client for subscriptions
+├── test.py         # Automated testing suite
+├── Makefile        # Build configuration
+└── README.md       # Project documentation
+```
+
+---
+
+## 💻 Build & Run
+
+### 🔧 Compilation
+
+```bash
+make all
+```
+
+---
+
+### ▶️ Run the Server (Broker)
+
+```bash
+./server <PORT>
+```
+
+---
+
+### 👤 Run a Subscriber
+
+```bash
+./subscriber <CLIENT_ID> <SERVER_IP> <SERVER_PORT>
+```
+
+---
+
+### 🧹 Cleanup
+
+```bash
+make clean
+```
+
+---
+
+## 🧪 Testing
+
+The `test.py` script provides automated testing for:
+
+* Client connections and reconnections
+* Topic subscriptions/unsubscriptions
+* Wildcard matching behavior
+* Message delivery correctness
+
+Run tests with:
+
+```bash
+python3 test.py
+```
+
+---
+
+## 🎯 Design Goals
+
+* High performance and low latency
+* Reliable TCP message handling
+* Flexible topic-based routing
+* Scalable client management
+* Clean and modular C implementation
+
+---
+
+## 📌 Future Improvements
+
+* Message persistence (disk storage)
+* QoS levels (like MQTT)
+* Authentication & security
+* Multithreading support (beyond `select()` limits)
+
+---
+
+## 📜 License
+
+This project is open-source and available under the MIT License.
+
+---
+
+## 👨‍💻 Author
+
+Developed as a systems programming project focused on **networking, concurrency, and protocol design in C**.
+
+---
+
+⭐ If you found this project useful, consider giving it a star!

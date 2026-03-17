@@ -1,7 +1,5 @@
+__pycache__/
+pcom_hw2_udp_client/utils/__pycache__/
 server
 subscriber
 *.o
-.vscode/
-*.out
-*.err
-__pycache__/
